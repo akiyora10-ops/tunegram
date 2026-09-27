@@ -1,5 +1,7 @@
 # TuneGram
 
+**Website:** <https://akiyora10-ops.github.io/tunegram> (deployed from [`docs/`](docs/) via GitHub Pages)
+
 A Windows desktop music player for local files, with the familiar Spotify-style
 layout: sidebar, search, home shelves, a persistent mini-player, and a queue.
 
@@ -192,3 +194,13 @@ Uninstalling removes the app; deleting this folder resets everything.
   (`blob:` is in `script-src`) because `file://` cannot execute inline scripts.
 - This project is not affiliated with Spotify AB or the Spicetify project; it
   only implements a small, compatible surface area.
+- The landing page in `docs/` is plain static HTML with no build step. It is
+  published by `.github/workflows/pages.yml`; the download buttons resolve to
+  the newest GitHub Release and auto-detect the repository owner from the
+  Pages hostname.
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE).

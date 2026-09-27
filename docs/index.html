@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TuneGram — Your downloads, beautifully played</title>
+<meta name="description" content="TuneGram is a free, local-first Windows music player for Windows 10/11. Plays mp3, flac, m4a, wma and opus, with a Spotify-grade interface and a Spicetify-inspired plugin and theme layer.">
+<meta name="theme-color" content="#08090a">
+<meta name="color-scheme" content="dark">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="TuneGram — Your downloads, beautifully played">
+<meta property="og:description" content="A free, local-first Windows music player. Plays any format, with a plugin and theme layer for people who like to tinker.">
+<meta property="og:image" content="app-screenshot.png">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="icon" href="favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="image" href="app-screenshot.png">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#08090a; --bg2:#0d1210;
+    --green:#1DB954; --green-glow:#3affa0;
+    --violet:#8b5cf6; --text:#f5f5f5; --sub:#a3a3a3;
+    --card-border:rgba(255,255,255,.08);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth; scroll-padding-top:96px; overflow-x:clip;}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    /* `clip` rather than `hidden`: `overflow-x:hidden` turns the body into a
+       scroll container, which silently breaks GSAP ScrollTrigger. */
+    overflow-x:clip;
+  }
+  h1,h2,h3,.logo{font-family:'Space Grotesk',system-ui,sans-serif;}
+  a{color:inherit;}
+  :focus-visible{outline:2px solid var(--green); outline-offset:3px; border-radius:4px;}
+  .skip{position:absolute; left:-9999px;}
+  .skip:focus{left:16px; top:16px; z-index:100; background:var(--green); color:#05130a; padding:12px 20px; border-radius:8px;}
+
+  #bg-canvas{position:fixed; inset:0; z-index:0; opacity:.85; pointer-events:none;}
+  .cursor-glow{
+    position:fixed; top:0; left:0; width:420px; height:420px; border-radius:50%;
+    background:radial-gradient(circle, rgba(29,185,84,.16), transparent 70%);
+    pointer-events:none; z-index:1; transform:translate(-50%,-50%);
+    display:none;
+  }
+  @media (hover:hover) and (pointer:fine){ .cursor-glow{display:block;} }
+
+  nav{
+    position:fixed; top:0; left:0; right:0; z-index:10;
+    display:flex; align-items:center; justify-content:space-between; gap:24px;
+    padding:20px 6vw; padding-top:calc(20px + env(safe-area-inset-top, 0px));
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    background:linear-gradient(to bottom, rgba(8,9,10,.8), transparent);
+  }
+  .logo{font-weight:700; font-size:1.3rem; letter-spacing:-0.5px; text-decoration:none;}
+  .logo span{color:var(--green);}
+  nav .links{display:flex; gap:32px; font-size:.9rem;}
+  nav .links a{color:var(--sub); text-decoration:none; transition:color .25s;}
+  nav .links a:hover{color:var(--text);}
+
+  .btn{
+    display:inline-block; padding:13px 28px; border-radius:100px; font-weight:500;
+    font-size:.9rem; text-decoration:none; cursor:pointer; border:none;
+    transition:box-shadow .3s, background .3s;
+  }
+  .btn-primary{background:var(--green); color:#05130a;}
+  .btn-primary:hover{box-shadow:0 0 30px rgba(29,185,84,.5);}
+  .btn-ghost{background:rgba(255,255,255,.06); color:var(--text); border:1px solid rgba(255,255,255,.15);}
+  .btn-ghost:hover{background:rgba(255,255,255,.12);}
+
+  section{position:relative; z-index:2; padding:0 6vw;}
+
+  #hero{min-height:100vh; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; text-align:center; padding-top:80px; padding-bottom:40px;}
+  .eyebrow{color:var(--green); font-size:.8rem; letter-spacing:2px; text-transform:uppercase; margin-bottom:22px; opacity:.9;}
+  h1{font-size:clamp(2.6rem, 7vw, 5.2rem); line-height:1.05; font-weight:700; max-width:900px;}
+  h1 .word{display:inline-block; will-change:transform;}
+  .gradient-text{
+    background:linear-gradient(90deg, var(--green), var(--green-glow), var(--violet));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .sub{color:var(--sub); font-size:1.15rem; max-width:580px; margin:26px auto 40px; line-height:1.6;}
+  .hero-actions{display:flex; gap:18px; flex-wrap:wrap; justify-content:center;}
+  .fineprint{color:#6b6b6b; font-size:.8rem; margin-top:22px; letter-spacing:.3px;}
+  .scroll-cue{position:absolute; bottom:20px; font-size:.75rem; color:var(--sub); letter-spacing:2px;}
+
+  .shot{
+    position:relative; margin:0 auto; max-width:1100px; border-radius:20px; padding:2px;
+    background:linear-gradient(120deg, var(--green), transparent 40%, var(--violet));
+    box-shadow:0 40px 120px rgba(0,0,0,.6);
+  }
+  .shot-inner{
+    background:#0c0e0d; border-radius:18px; overflow:hidden; position:relative;
+  }
+  .shot-inner img{display:block; width:100%; height:auto;}
+  .shot-dots{display:flex; gap:6px; padding:12px 16px 0;}
+  .shot-dots span{width:10px; height:10px; border-radius:50%; background:rgba(255,255,255,.15);}
+  #product{padding-bottom:40px;}
+
+  #features{padding:120px 6vw; max-width:1200px; margin:0 auto;}
+  .section-head{text-align:center; max-width:640px; margin:0 auto 64px;}
+  .section-head h2{font-size:clamp(1.8rem,4vw,2.6rem); margin-bottom:14px;}
+  .section-head p{color:var(--sub); font-size:1.05rem;}
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:24px;}
+  .card{
+    background:linear-gradient(160deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+    border:1px solid var(--card-border); border-radius:20px; padding:34px;
+    transition:transform .1s ease-out, border-color .3s; transform-style:preserve-3d;
+  }
+  .card:hover{border-color:rgba(29,185,84,.4);}
+  .card .icon{font-size:1.8rem; margin-bottom:18px; display:block;}
+  .card h3{font-size:1.2rem; margin-bottom:10px; font-weight:600;}
+  .card p{color:var(--sub); font-size:.95rem; line-height:1.6;}
+
+  #showcase{padding:40px 6vw 120px; max-width:1100px; margin:0 auto; text-align:center;}
+  #showcase .shot{margin-top:56px;}
+  #showcase h2{font-size:clamp(1.8rem,4vw,2.6rem); margin-bottom:14px;}
+  #showcase > p{color:var(--sub);}
+  figcaption{color:#6b6b6b; font-size:.82rem; margin-top:18px;}
+
+  #cta{padding:40px 6vw 140px; text-align:center;}
+  #cta h2{font-size:clamp(2rem,5vw,3.2rem); margin-bottom:20px;}
+  #cta p{color:var(--sub); margin-bottom:38px;}
+
+  footer{padding:36px 6vw; text-align:center; color:#666; font-size:.85rem; position:relative; z-index:2;
+    border-top:1px solid rgba(255,255,255,.06);}
+  footer a{color:var(--sub);}
+
+  .reveal{opacity:0;}
+  .no-motion .reveal{opacity:1 !important; transform:none !important;}
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto;}
+    *,*::before,*::after{animation-duration:.001ms !important; transition-duration:.001ms !important;}
+  }
+</style>
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+<canvas id="bg-canvas" aria-hidden="true"></canvas>
+<div class="cursor-glow" id="glow" aria-hidden="true"></div>
+
+<nav>
+  <a class="logo" href="#top">Tune<span>Gram</span></a>
+  <div class="links">
+    <a href="#features">Features</a>
+    <a href="#showcase">Preview</a>
+    <a href="#cta">Get Started</a>
+  </div>
+  <a href="#cta" class="btn btn-primary" data-download>Download</a>
+</nav>
+
+<main id="main">
+  <section id="hero">
+    <div class="eyebrow">A local music player, reimagined</div>
+    <h1 id="top">
+      <span class="word">Your</span> <span class="word">downloads,</span>
+      <span class="word gradient-text">beautifully</span>
+      <span class="word gradient-text">played.</span>
+    </h1>
+    <p class="sub">TuneGram turns every file you've ever saved into a
+      Spotify-grade library — any format, silky playback, and a plugin system
+      built for people who like to tinker.</p>
+    <div class="hero-actions">
+      <a href="#cta" class="btn btn-primary" data-download>Get TuneGram</a>
+      <a href="#features" class="btn btn-ghost">See what's inside</a>
+    </div>
+    <p class="fineprint">Free · Windows 10 &amp; 11 (64-bit) · No account, no telemetry</p>
+    <div class="scroll-cue" aria-hidden="true">SCROLL ↓</div>
+  </section>
+
+  <section id="product">
+    <figure class="shot reveal" style="margin:0;">
+      <div class="shot-inner">
+        <div class="shot-dots"><span></span><span></span><span></span></div>
+        <img src="app-screenshot.png" width="1920" height="1032"
+             alt="The TuneGram home screen showing the sidebar, library folders, playlists and recently played tracks.">
+      </div>
+    </figure>
+  </section>
+
+  <section id="features">
+    <div class="section-head reveal">
+      <h2>Built for hoarders of good music</h2>
+      <p>Every feature exists because a scattered Downloads folder deserves better.</p>
+    </div>
+    <div class="grid">
+      <div class="card reveal" data-tilt>
+        <span class="icon" aria-hidden="true">🎧</span>
+        <h3>Plays anything</h3>
+        <p>mp3, flac, m4a, wma, opus — if it ever ended up on your disk, TuneGram plays it.
+          Unsupported formats are transcoded in the background.</p>
+      </div>
+      <div class="card reveal" data-tilt>
+        <span class="icon" aria-hidden="true">🌓</span>
+        <h3>A proper desktop player</h3>
+        <p>Persistent mini-player, queue, playlists, search, and media-key control.
+          Local files don't have to feel local.</p>
+      </div>
+      <div class="card reveal" data-tilt>
+        <span class="icon" aria-hidden="true">🧩</span>
+        <h3>Plugin &amp; theme ready</h3>
+        <p>A Spicetify-inspired layer: drop in a JavaScript plugin or a CSS theme and
+          it loads on the next launch, no rebuild required.</p>
+      </div>
+      <div class="card reveal" data-tilt>
+        <span class="icon" aria-hidden="true">📥</span>
+        <h3>Point it at a folder</h3>
+        <p>Add a music folder or drag files straight onto the window. TuneGram reads
+          tags and artwork, then keeps the index in sync as you add and remove files.</p>
+      </div>
+      <div class="card reveal" data-tilt>
+        <span class="icon" aria-hidden="true">🔒</span>
+        <h3>Completely local</h3>
+        <p>No sign-in, no streaming backend, no analytics. Your library never leaves
+          your machine — the app has no network features at all.</p>
+      </div>
+      <div class="card reveal" data-tilt>
+        <span class="icon" aria-hidden="true">⚡</span>
+        <h3>Fast on big folders</h3>
+        <p>Metadata and artwork are cached on first scan, so reopening a library of
+          tens of thousands of tracks is instant.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="showcase">
+    <div class="reveal">
+      <h2>One player, your whole archive</h2>
+      <p style="margin-top:12px;">Sort, filter and search everything you've collected.</p>
+    </div>
+    <figure class="shot reveal" style="margin:0;">
+      <div class="shot-inner">
+        <div class="shot-dots"><span></span><span></span><span></span></div>
+        <img src="app-library.png" width="1920" height="1032" loading="lazy"
+             alt="The TuneGram All Songs view listing scanned tracks with title, artist, album and duration columns.">
+      </div>
+      <figcaption>Real screenshot from the release build.</figcaption>
+    </figure>
+  </section>
+
+  <section id="cta">
+    <h2 class="reveal">Stop fighting your Downloads folder.</h2>
+    <p class="reveal">Free, local, and yours to customize.</p>
+    <a href="#" class="btn btn-primary reveal" data-download>Download TuneGram</a>
+    <p class="fineprint">Portable installer · No admin rights needed · Unsigned, so Windows SmartScreen may warn on first run.</p>
+  </section>
+</main>
+
+<footer>
+  <p>TuneGram — open source, MIT licensed. <a href="https://github.com/akiyora10-ops/tunegram" data-repo-link>Source code</a></p>
+  <p style="margin-top:8px;">Not affiliated with Spotify AB. TuneGram is an independent project.</p>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js" defer></script>
+<script>
+(function () {
+  'use strict';
+
+  // ---------- Resolve download links ----------
+  // Auto-detects the owner when served from <owner>.github.io, so this normally
+  // needs no editing. Override locally with ?repo=owner/name.
+  var repo = 'akiyora10-ops/tunegram';
+  var host = location.hostname;
+  if (/\.github\.io$/.test(host)) repo = host.split('.')[0] + '/tunegram';
+  var override = new URLSearchParams(location.search).get('repo');
+  if (override) repo = override;
+  var releases = 'https://github.com/' + repo + '/releases/latest';
+  Array.prototype.forEach.call(document.querySelectorAll('[data-download]'), function (a) {
+    a.href = releases;
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-repo-link]'), function (a) {
+    a.href = 'https://github.com/' + repo;
+  });
+
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // The CDN <script> tags are deferred, so they execute *after* this inline
+  // script. Poll for each one independently so a Three.js failure cannot also
+  // take the GSAP animations down with it.
+  function whenAvailable(check, fn) {
+    var tries = 0;
+    (function poll() {
+      if (check()) return fn();
+      if (++tries > 100) return; // ~10s: give up quietly, page stays readable
+      setTimeout(poll, 100);
+    })();
+  }
+
+  // ---------- Three.js background ----------
+  function initBackground() {
+    var canvas = document.getElementById('bg-canvas');
+    try {
+      var renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+      var scene = new THREE.Scene();
+      var camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
+      camera.position.z = 9;
+
+      function resize() {
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+      }
+      resize();
+      window.addEventListener('resize', resize);
+
+      scene.add(new THREE.AmbientLight(0x404040, 1.5));
+      var p1 = new THREE.PointLight(0x1DB954, 3, 30); p1.position.set(4, 4, 6); scene.add(p1);
+      var p2 = new THREE.PointLight(0x8b5cf6, 2, 30); p2.position.set(-5, -3, 4); scene.add(p2);
+
+      var knot = new THREE.Mesh(
+        new THREE.TorusKnotGeometry(2, 0.55, 180, 24),
+        new THREE.MeshStandardMaterial({ color: 0x1DB954, metalness: 0.65, roughness: 0.25, wireframe: true })
+      );
+      scene.add(knot);
+
+      var count = 900;
+      var geo = new THREE.BufferGeometry();
+      var pos = new Float32Array(count * 3);
+      for (var i = 0; i < count; i++) {
+        pos[i * 3] = (Math.random() - 0.5) * 40;
+        pos[i * 3 + 1] = (Math.random() - 0.5) * 40;
+        pos[i * 3 + 2] = (Math.random() - 0.5) * 40;
+      }
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      scene.add(new THREE.Points(geo,
+        new THREE.PointsMaterial({ color: 0x3affa0, size: 0.045, transparent: true, opacity: 0.55 })));
+
+      var mx = 0, my = 0;
+      window.addEventListener('mousemove', function (e) {
+        mx = e.clientX / window.innerWidth - 0.5;
+        my = e.clientY / window.innerHeight - 0.5;
+      });
+
+      function frame() {
+        knot.rotation.x += 0.0025;
+        knot.rotation.y += 0.0035;
+        camera.position.x += (mx * 2 - camera.position.x) * 0.03;
+        camera.position.y += (-my * 2 - camera.position.y) * 0.03;
+        camera.lookAt(scene.position);
+        renderer.render(scene, camera);
+      }
+      if (reduced) { frame(); return; }   // one static frame instead of a loop
+      (function loop() { requestAnimationFrame(loop); frame(); })();
+    } catch (err) {
+      canvas.remove();                    // no WebGL: plain background is fine
+    }
+  }
+
+  // ---------- Animations ----------
+  var motionStarted = false;
+
+  function initMotion() {
+    // Only opt out of motion when it is genuinely unavailable. Adding the class
+    // unconditionally would let its !important rules defeat the GSAP tweens.
+    if (reduced || !window.gsap || !window.ScrollTrigger) {
+      document.documentElement.classList.add('no-motion');
+      return;
+    }
+    motionStarted = true;
+
+    var gsap = window.gsap;
+    gsap.registerPlugin(ScrollTrigger);
+
+    gsap.from('.word', { y: 50, opacity: 0, duration: 0.9, stagger: 0.08, ease: 'power3.out', delay: 0.2 });
+    gsap.from('.eyebrow', { opacity: 0, y: -10, duration: 0.8, delay: 0.1 });
+    gsap.from('.sub, .hero-actions', { opacity: 0, y: 20, duration: 0.9, delay: 1, stagger: 0.15 });
+
+    gsap.utils.toArray('.reveal').forEach(function (el) {
+      gsap.fromTo(el,
+        { opacity: 0, y: 40 },
+        {
+          opacity: 1, y: 0, duration: 0.9, ease: 'power3.out',
+          scrollTrigger: { trigger: el, start: 'top 88%' }
+        });
+    });
+
+    // A lazily-loaded screenshot changes the page height after ScrollTrigger has
+    // already measured it, which leaves later triggers at stale offsets.
+    var refresh = function () { ScrollTrigger.refresh(); };
+    window.addEventListener('load', refresh);
+    Array.prototype.forEach.call(document.images, function (img) {
+      if (!img.complete) img.addEventListener('load', refresh);
+    });
+    setTimeout(refresh, 1500);
+
+    var glow = document.getElementById('glow');
+    var glowX = gsap.quickTo(glow, 'x', { duration: 0.6, ease: 'power3' });
+    var glowY = gsap.quickTo(glow, 'y', { duration: 0.6, ease: 'power3' });
+    window.addEventListener('mousemove', function (e) { glowX(e.clientX); glowY(e.clientY); });
+
+    Array.prototype.forEach.call(document.querySelectorAll('.btn'), function (btn) {
+      btn.addEventListener('mousemove', function (e) {
+        var r = btn.getBoundingClientRect();
+        gsap.to(btn, {
+          x: (e.clientX - r.left - r.width / 2) * 0.3,
+          y: (e.clientY - r.top - r.height / 2) * 0.3,
+          duration: 0.3, ease: 'power2.out'
+        });
+      });
+      btn.addEventListener('mouseleave', function () {
+        gsap.to(btn, { x: 0, y: 0, duration: 0.6, ease: 'elastic.out(1,.4)' });
+      });
+    });
+
+    Array.prototype.forEach.call(document.querySelectorAll('[data-tilt]'), function (card) {
+      card.addEventListener('mousemove', function (e) {
+        var r = card.getBoundingClientRect();
+        var px = (e.clientX - r.left) / r.width - 0.5;
+        var py = (e.clientY - r.top) / r.height - 0.5;
+        card.style.transform =
+          'perspective(700px) rotateX(' + (-py * 10) + 'deg) rotateY(' + (px * 10) + 'deg) translateY(-4px)';
+      });
+      card.addEventListener('mouseleave', function () {
+        card.style.transform = 'perspective(700px) rotateX(0deg) rotateY(0deg)';
+      });
+    });
+  }
+
+  whenAvailable(function () { return window.THREE; }, initBackground);
+  whenAvailable(function () { return window.gsap && window.ScrollTrigger; }, initMotion);
+
+  // Safety net: if GSAP never showed up, nothing stays hidden.
+  setTimeout(function () {
+    if (!motionStarted) document.documentElement.classList.add('no-motion');
+  }, 12000);
+})();
+</script>
+</body>
+</html>
