@@ -1,0 +1,195 @@
+@import 'tailwindcss';
+
+/*
+ * TuneGram design tokens.
+ *
+ * Three views of the same palette:
+ *   --tg-*      the app's own names (what the UI code is written against)
+ *   --spice-*   Spicetify-compatible aliases, so a theme can reskin the app by
+ *               overriding these alone (see src/spicetify-compat)
+ *   @theme     Tailwind colour utilities, wired to the aliases so that changing
+ *               a CSS variable restyles every component with no rebuild
+ *
+ * Because Tailwind emits `var(--spice-*)` rather than a literal colour, themes
+ * take effect instantly at runtime.
+ */
+:root {
+  /* App shell background */
+  --tg-main: #121212;
+  --tg-sidebar: #121212;
+  --tg-card: #181818;
+  --tg-card-hover: #282828;
+  --tg-player: #000000;
+  --tg-divider: #2a2a2a;
+  --tg-accent: #1db954;
+  --tg-accent-hover: #1ed760;
+  --tg-warning: #f0a02c;
+  --tg-text: #ffffff;
+  --tg-muted: #b3b3b3;
+
+  /* Spicetify mirror. Themes override these. */
+  --spice-main: var(--tg-main);
+  --spice-sidebar: var(--tg-sidebar);
+  --spice-card: var(--tg-card);
+  --spice-card-hover: var(--tg-card-hover);
+  --spice-player: var(--tg-player);
+  --spice-divider: var(--tg-divider);
+  --spice-text: var(--tg-text);
+  --spice-subtext: var(--tg-muted);
+  --spice-button: var(--tg-accent);
+  --spice-button-active: var(--tg-accent-hover);
+  --spice-warning: var(--tg-warning);
+
+  /* Derived, not part of the documented palette but themeable. */
+  --spice-highlight: color-mix(in srgb, var(--spice-text) 6%, transparent);
+  --spice-row-hover: color-mix(in srgb, var(--spice-text) 10%, transparent);
+  --spice-progress-track: #4d4d4d;
+  --spice-shadow: 0 8px 24px rgb(0 0 0 / 0.5);
+
+  --tg-sidebar-width: 230px;
+  --tg-player-height: 90px;
+  --tg-topbar-height: 64px;
+  --tg-radius: 8px;
+
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-base: var(--spice-main);
+  --color-sidebar: var(--spice-sidebar);
+  --color-card: var(--spice-card);
+  --color-card-hover: var(--spice-card-hover);
+  --color-bar: var(--spice-player);
+  --color-divider: var(--spice-divider);
+  --color-accent: var(--spice-button);
+  --color-accent-hover: var(--spice-button-active);
+  --color-warning: var(--spice-warning);
+  --color-ink: var(--spice-text);
+  --color-muted: var(--spice-subtext);
+  --color-row-hover: var(--spice-row-hover);
+  --color-highlight: var(--spice-highlight);
+  --color-progress-track: var(--spice-progress-track);
+
+  --font-sans:
+    'Circular Std', 'Circular', 'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system,
+    'Helvetica Neue', Arial, sans-serif;
+
+  --radius-card: var(--tg-radius);
+}
+
+@layer base {
+  * {
+    border-color: var(--spice-divider);
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+  }
+
+  body {
+    background: var(--spice-main);
+    color: var(--spice-text);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    user-select: none;
+    cursor: default;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--spice-button) 45%, transparent);
+  }
+
+  input,
+  textarea,
+  [contenteditable] {
+    user-select: text;
+  }
+
+  button {
+    font: inherit;
+    color: inherit;
+    cursor: default;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--spice-button);
+    outline-offset: 2px;
+  }
+
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #555555;
+    border: 3px solid transparent;
+    background-clip: content-box;
+    border-radius: 8px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #727272;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+}
+
+@utility drag-region {
+  -webkit-app-region: drag;
+}
+
+@utility no-drag {
+  -webkit-app-region: no-drag;
+}
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Ambient wash behind the top bar, echoing the soft glow in the reference. */
+@utility topbar-scrim {
+  background: linear-gradient(to bottom, rgb(0 0 0 / 0.75), transparent);
+}
+
+@keyframes equalize {
+  0%,
+  100% {
+    height: 25%;
+  }
+  50% {
+    height: 100%;
+  }
+}
+
+@utility equalizer-bar {
+  height: 45%;
+  animation: equalize 0.9s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

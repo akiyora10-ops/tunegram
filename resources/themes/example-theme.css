@@ -1,0 +1,28 @@
+/*
+ * TuneGram example theme.
+ *
+ * Themes are plain CSS. Anything that only overrides these custom properties
+ * reskins the entire app, because every Tailwind colour in TuneGram is mapped
+ * to a `--spice-*` variable (see src/styles/index.css).
+ *
+ * Copy this file, rename it, and change the values below.
+ */
+
+:root {
+  /* Main surfaces */
+  --spice-main: #121212;
+  --spice-sidebar: #121212;
+  --spice-card: #181818;
+  --spice-card-hover: #282828;
+  --spice-player: #000000;
+  --spice-divider: #2a2a2a;
+
+  /* Text */
+  --spice-text: #ffffff;
+  --spice-subtext: #b3b3b3;
+
+  /* Accent */
+  --spice-button: #1db954;
+  --spice-button-active: #1ed760;
+  --spice-button-text: #000000;
+}
